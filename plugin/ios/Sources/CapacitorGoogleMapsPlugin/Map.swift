@@ -705,6 +705,17 @@ public class Map {
                             }
                         }.resume()
                     }
+                } else if iconUrl.starts(with: "data:"),
+                          let commaIndex = iconUrl.firstIndex(of: ","),
+                          let data = Data(
+                            base64Encoded: String(iconUrl[iconUrl.index(after: commaIndex)...])
+                          ),
+                          let iconImage = UIImage(data: data) {
+                    // PARCHE: admite imágenes generadas en el propio dispositivo
+                    // como data URI (data:image/png;base64,...), igual que ya
+                    // funciona de forma nativa en la plataforma web.
+                    self.markerIcons[iconUrl] = iconImage
+                    newMarker.icon = getResizedIcon(iconImage, marker)
                 } else if let iconImage = UIImage(named: "public/\(iconUrl)") {
                     self.markerIcons[iconUrl] = iconImage
                     newMarker.icon = getResizedIcon(iconImage, marker)
@@ -726,6 +737,7 @@ public class Map {
 
         return newMarker
     }
+
 }
 
 private func getResizedIcon(_ iconImage: UIImage, _ marker: Marker) -> UIImage? {
