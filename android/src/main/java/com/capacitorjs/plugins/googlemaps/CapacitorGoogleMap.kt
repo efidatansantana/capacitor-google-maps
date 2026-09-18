@@ -20,6 +20,8 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import java.io.InputStream
 import java.net.URL
+import java.io.ByteArrayInputStream
+import android.util.Base64
 
 class CapacitorGoogleMap(
         val id: String,
@@ -866,8 +868,8 @@ class CapacitorGoogleMap(
         if (marker.iconAnchor != null) {
             markerOptions.anchor(marker.iconAnchor!!.x, marker.iconAnchor!!.y)
         }
-
-
+ 
+ 
         if (!marker.iconUrl.isNullOrEmpty()) {
             if (this.markerIcons.contains(marker.iconUrl)) {
                 val cachedBitmap = this.markerIcons[marker.iconUrl]
@@ -877,6 +879,14 @@ class CapacitorGoogleMap(
                     var stream: InputStream? = null
                     if (marker.iconUrl!!.startsWith("https:")) {
                         stream = URL(marker.iconUrl).openConnection().getInputStream()
+                    } else if (marker.iconUrl!!.startsWith("data:")) {
+                        // PARCHE: admite imágenes generadas en el propio dispositivo
+                        // como data URI (data:image/png;base64,...), igual que ya
+                        // funciona de forma nativa en la plataforma web.
+                        val commaIndex = marker.iconUrl!!.indexOf(',')
+                        val base64Data = marker.iconUrl!!.substring(commaIndex + 1)
+                        val bytes = Base64.decode(base64Data, Base64.DEFAULT)
+                        stream = ByteArrayInputStream(bytes)
                     } else {
                         stream = this.delegate.context.assets.open("public/${marker.iconUrl}")
                     }
@@ -888,7 +898,7 @@ class CapacitorGoogleMap(
                     if (marker.iconUrl!!.endsWith(".svg")) {
                         detailedMessage = "SVG not supported"
                     }
-
+ 
                     Log.w(
                             "CapacitorGoogleMaps",
                             "Could not load image '${marker.iconUrl}': ${detailedMessage}. Using default marker icon."
@@ -900,9 +910,9 @@ class CapacitorGoogleMap(
                 markerOptions.icon(BitmapDescriptorFactory.defaultMarker(marker.colorHue!!))
             }
         }
-
+ 
         marker.markerOptions = markerOptions
-
+ 
         return markerOptions
     }
 
